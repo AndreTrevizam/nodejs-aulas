@@ -4,23 +4,30 @@
 2. Obter o endereco do usuario pelo Id
 */
 
-function obterUsuario(callback) {
-  setTimeout(() => {
-    return callback(null, {
-      id: 1,
-      nome: 'Dezin',
-      dataNascimento: new Date()
-    })
-  }, 1000)
+const util = require('util')
+const obterEnderecoAsync = util.promisify(obterEndereco)
+
+function obterUsuario() {
+  return new Promise(function resolvePromise(resolve, reject) {
+    setTimeout(() => {
+      return resolve({
+        id: 1,
+        nome: 'Dezin',
+        dataNascimento: new Date()
+      })
+    }, 1000)
+  })
 }
 
-function obterTelefone(idUsuario, callback) {
-  setTimeout(() => {
-    return callback(null, {
-      numero: '1100000000',
-      ddd: 17
-    })
-  }, 2000)
+function obterTelefone(idUsuario) {
+  return new Promise(function resolvePromise(resolve, reject) {
+    setTimeout(() => {
+      return resolve({
+        numero: '1100000000',
+        ddd: 17
+      })
+    }, 2000)
+  })
 }
 
 function obterEndereco(idUsuario, callback) {
@@ -32,32 +39,65 @@ function obterEndereco(idUsuario, callback) {
   }, 2000)
 }
 
-function resolverUsuario(erro, usuario) {
-  console.log(usuario)
-}
-
-obterUsuario(function resolverUsuario(erro, usuario) {
-  if (erro) {
-    console.error('deu ruim pai usuario ta zuado', erro)
-    return
-  }
-
-  obterTelefone(usuario.id, function resolverTelefone(erro1, telefone) {
-    if (erro1) {
-      console.error('deu ruim pai telefone ta zuado', erro1)
-      return
-    }
-
-    obterEndereco(usuario.id, function resolverEndereco(erro2, endereco) {
-      if (erro2) {
-        console.error('deu ruim pai endereco ta zuado', erro2)
-        return
+const usuarioPromise = obterUsuario()
+usuarioPromise
+  .then(function (usuario) {
+    return obterTelefone(usuario.id)
+      .then(function resolverTelefone(resultado) {
+        return {
+          usuario: {
+            id: usuario.id,
+            nome: usuario.nome
+          },
+          telefone: resultado
+        }
+      })
+  })
+  .then(function (resultado) {
+    const endereco = obterEnderecoAsync(resultado.usuario.id)
+    return endereco.then(function resolverEndereco(result) {
+      return {
+        usuario: resultado.usuario,
+        telefone: resultado.telefone,
+        endereco: result
       }
-
-      console.log(`Nome: ${usuario.nome}, endereço: ${endereco.rua}, telefone: ${telefone.numero}`)
     })
   })
-})
+  .then(function (resultado) {
+    console.log(`Nome: ${resultado.usuario.nome}
+      Endereco: ${resultado.endereco.rua}, ${resultado.endereco.numero}
+      Telefone: ${resultado.telefone.ddd} ${resultado.telefone.numero}`)
+  })
+  .catch(function (error) {
+    console.error('deu pau', error)
+  })
+
+// function resolverUsuario(erro, usuario) {
+//   console.log(usuario)
+// }
+
+// obterUsuario(function resolverUsuario(erro, usuario) {
+//   if (erro) {
+//     console.error('deu ruim pai usuario ta zuado', erro)
+//     return
+//   }
+
+//   obterTelefone(usuario.id, function resolverTelefone(erro1, telefone) {
+//     if (erro1) {
+//       console.error('deu ruim pai telefone ta zuado', erro1)
+//       return
+//     }
+
+//     obterEndereco(usuario.id, function resolverEndereco(erro2, endereco) {
+//       if (erro2) {
+//         console.error('deu ruim pai endereco ta zuado', erro2)
+//         return
+//       }
+
+//       console.log(`Nome: ${usuario.nome}, endereço: ${endereco.rua}, telefone: ${telefone.numero}`)
+//     })
+//   })
+// })
 
 // const telefone = obterTelefone(usuario.id)
 // const endereco = obterEndereco(usuario.id)
